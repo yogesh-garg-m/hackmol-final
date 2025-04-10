@@ -9,7 +9,28 @@ import SignUp from "./pages/SignUp";
 import NotFound from "./pages/NotFound";
 import Homepage from "./pages/Homepage";
 import Profile from "./pages/Profile";
-
+import PublicProfilePage from "./pages/PublicProfilePage";
+import PeoplePage from "./pages/PeoplePage";
+import EventDetailsPage from "./pages/EventDetailsPage";
+import ClubCreate from "./pages/ClubCreate";
+import ClubLogin from "./pages/ClubLogin";
+import ClubDashboardPage from "./pages/ClubDashboardPage";
+import CreateEventPage from "@/pages/CreateEventPage";
+import EventPreviewPage from "@/pages/EventPreviewPage";
+import EventsPage from './pages/EventsPage';
+import ProjectsPage from './pages/ProjectsPage';
+import ResourcesPage from './pages/ResourcesPage';
+import CreateTemporaryOpening from './pages/CreateTemporaryOpening';
+import EventAttendees from "./pages/EventAttendees";
+import Dashboard from "./pages/dashboard/Dashboard";
+import CalendarPage from "./pages/dashboard/Calender";
+import Clubs from "./pages/dashboard/Clubs";
+import Events from "./pages/dashboard/Events";
+import Newsletters from "./pages/dashboard/Newsletters";
+import Users from "./pages/dashboard/Users";
+import Volunteering from "./pages/dashboard/Volunteering";
+import VolunteerPage from "./pages/VolunteerPage";
+import VerifyAttendeesPage from "./pages/verify-attendees/VerifyAttendeesPage";
 import LostAndFound from "./pages/LostAndFound";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -165,7 +186,90 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              
+              <Route
+                path="/volunteering"
+                element={
+                  <ProtectedRoute>
+                    <VolunteerPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/lost-and-found"
+                element={
+                  <LostAndFound />
+                }
+              />
+              <Route
+                path="/club/create"
+                element={
+                  <ProtectedRoute>
+                    <ClubCreate />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/club/login"
+                element={
+                  <ProtectedRoute>
+                    <ClubLogin />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/club/dashboard"
+                element={
+                  <ProtectedClubRoute>
+                    <ClubDashboardPage />
+                  </ProtectedClubRoute>
+                }
+              />
+              <Route
+                path="/club/create-event"
+                element={
+                  <ProtectedClubRoute>
+                    <CreateEventPage />
+                  </ProtectedClubRoute>
+                }
+              />
+              <Route
+                path="/club/event/:eventId/preview"
+                element={
+                  <ProtectedClubRoute>
+                    <EventPreviewPage />
+                  </ProtectedClubRoute>
+                }
+              />
+              <Route path="/events-registered" element={
+                <ProtectedRoute>
+                  <EventsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/collaborations" element={
+                <ProtectedRoute>
+                  <ProjectsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/resources" element={
+                <ProtectedRoute>
+                  <ResourcesPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/create-temporary-opening" element={
+                <ProtectedRoute>
+                  <CreateTemporaryOpening />
+                </ProtectedRoute>
+              } />
+              <Route path="/club/event-attendees/:event_id" element={
+              <ProtectedClubRoute>
+                <EventAttendees />
+              </ProtectedClubRoute>
+                } />
+              <Route path="/openings" element={
+                <ProtectedRoute>
+                  <RecentOpeningsPage />
+                </ProtectedRoute>
+                } />
                 <Route path="/project/:opening_id" element={
                   <ProtectedRoute>
                     <Project />
@@ -177,7 +281,34 @@ function App() {
                     </DashboardLayout>
                   </ProtectedAdminRoute>
                 } />
-                
+                <Route path="/dashboard/clubs" element={
+                  <ProtectedAdminRoute>
+                    <DashboardLayout>
+                      <Clubs />
+                    </DashboardLayout>
+                  </ProtectedAdminRoute>
+                } />
+                  <Route path="/dashboard/events" element={
+                    <ProtectedAdminRoute>
+                      <DashboardLayout>
+                        <Events />
+                      </DashboardLayout>
+                    </ProtectedAdminRoute>
+                  } />
+                  <Route path="/dashboard/calendar" element={
+                    <ProtectedAdminRoute>
+                      <DashboardLayout>
+                        <CalendarPage />
+                      </DashboardLayout>
+                    </ProtectedAdminRoute>
+                  } />
+                  <Route path="/dashboard/newsletters" element={
+                    <ProtectedAdminRoute>
+                      <DashboardLayout>
+                        <Newsletters />
+                      </DashboardLayout>
+                    </ProtectedAdminRoute>
+                  } />
                     <Route path="/dashboard/volunteering" element={
                       <ProtectedAdminRoute>
                         <DashboardLayout>
