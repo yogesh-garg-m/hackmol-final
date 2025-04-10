@@ -96,12 +96,16 @@ const PeoplePage: React.FC = () => {
         const preferences = preferencesData?.find(pref => pref.user_id === profile.id);
         return {
           ...profile,
-          skills: optional?.skills ? optional.skills.split(',').map(skill => skill.trim()) : [],
-          bio: optional?.bio,
-          contact_info: optional?.contact_info,
-          projects: optional?.projects,
-          social_media_links: optional?.social_media_links,
-          volunteering_exp: optional?.volunteering_exp,
+          optional: {
+            ...optional,
+            skills: optional?.skills || '',
+            bio: optional?.bio || '',
+            contact_info: optional?.contact_info || '',
+            projects: optional?.projects || '',
+            social_media_links: optional?.social_media_links || '',
+            volunteering_exp: optional?.volunteering_exp || '',
+            profile_picture_url: optional?.profile_picture_url || ''
+          },
           preferences: preferences || {}
         };
       });

@@ -361,6 +361,143 @@ const CreateEventForm = () => {
       const eventCode = parseInt(Math.floor(10000 + Math.random() * 90000).toString());
       console.log("Generated event code:", eventCode);
 
+      const eventJson = {
+        event_id: eventCode,
+        club_id: parseInt(clubId),
+        name: data.name || "",
+        datetime: data.datetime || "",
+        location: data.location || "",
+        short_description: data.short_description || "",
+        eligibility: data.eligibility || "",
+        registration_deadline: data.registration_deadline || "",
+        status: data.status || "Open",
+        max_attendees: data.max_attendees || 1,
+        current_attendees: 0,
+        event_thumbnail: data.event_thumbnail || 'https://picsum.photos/800/400',
+        is_deleted: false,
+        event_type: data.event_type || "open",
+        payment_link: data.event_type === "paid" ? data.payment_link : null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        
+        // Tags
+        tags: data.tags || [],
+        
+        // Agenda
+        agenda: (data.agenda || []).map(item => ({
+          title: item.title || "",
+          description: item.description || "",
+          start_time: item.start_time || "",
+          end_time: item.end_time || "",
+          location: item.location || "",
+          display_order: item.display_order || 0
+        })),
+        
+        // Speakers
+        speakers: (data.speakers || []).map(speaker => ({
+          name: speaker.name || "",
+          bio: speaker.bio || "",
+          role: speaker.role || "",
+          display_order: speaker.display_order || 0
+        })),
+        
+        // Sponsors
+        sponsors: (data.sponsors || []).map(sponsor => ({
+          name: sponsor.name || "",
+          description: sponsor.description || "",
+          logo_url: sponsor.logo_url || "",
+          website_url: sponsor.website_url || "",
+          sponsorship_level: sponsor.sponsorship_level || "",
+          display_order: sponsor.display_order || 0
+        })),
+        
+        // Optional Details
+        optional_details: (data.optional_details || []).map(detail => ({
+          heading: detail.heading || "",
+          content: detail.content || "",
+          subheading: detail.subheading || "",
+          display_order: detail.display_order || 0
+        })),
+        
+        // FAQs
+        faqs: (data.faqs || []).map(faq => ({
+          question: faq.question || "",
+          answer: faq.answer || "",
+          display_order: faq.display_order || 0
+        })),
+        
+        // Prizes
+        prizes: (data.prizes || []).map(prize => ({
+          title: prize.title || "",
+          description: prize.description || "",
+          value: prize.value || "",
+          position: prize.position || "",
+          display_order: prize.display_order || 0
+        })),
+        
+        // Resources
+        resources: (data.resources || []).map(resource => ({
+          title: resource.title || "",
+          url: resource.url || "",
+          description: resource.description || "",
+          type: resource.type || "",
+          display_order: resource.display_order || 0
+        })),
+        
+        // Media
+        media: (data.media || []).map(media => ({
+          type: media.type || "Image",
+          url: media.url || "",
+          caption: media.caption || "",
+          display_order: media.display_order || 0
+        })),
+        
+        // Links
+        links: (data.links || []).map(link => ({
+          link_type: link.link_type || "",
+          url: link.url || "",
+          label: link.label || "",
+          display_order: link.display_order || 0
+        })),
+        
+        // Contacts
+        contacts: (data.contacts || []).map(contact => ({
+          name: contact.name || "",
+          email: contact.email || "",
+          phone: contact.phone || "",
+          role: contact.role || "",
+          display_order: contact.display_order || 0
+        })),
+        
+        // Social Links
+        social_links: (data.social_links || []).map(link => ({
+          platform: link.platform || "",
+          url: link.url || "",
+          display_order: link.display_order || 0
+        })),
+        
+        // Registration Questions
+        questions: (data.questions || []).map(q => ({
+          question: q.question || "",
+          is_payment: q.is_payment || false,
+          display_order: q.display_order || 0
+        })),
+        
+        // Metadata
+        metadata: {
+          created_by: clubId,
+          created_from: "web",
+          browser_info: navigator.userAgent,
+          ip_address: "",
+          device_type: "desktop",
+          platform: "web",
+          last_activity: new Date().toISOString()
+        }
+      };
+
+      // Log the complete JSON object
+      console.log("Complete Event JSON:", JSON.stringify(eventJson, null, 2));
+      
       // Insert into events table
       console.log("Attempting to insert into events table...");
       const { data: event, error: eventError } = await supabase
@@ -391,6 +528,29 @@ const CreateEventForm = () => {
       }
       console.log("Event inserted successfully:", event);
       console.log("**********Inserted event ID**********:", event?.event_id);
+
+      // Send event data to backend for storage (non-blocking)
+      if (event?.event_id) {
+        // Fire and forget - don't await this
+        fetch('http://localhost:3000/api/save-event', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(eventJson),
+        })
+        .then(response => {
+          if (!response.ok) {
+            console.error('Failed to save event data to backend:', response.statusText);
+          } else {
+            console.log('Event data saved to backend successfully');
+          }
+        })
+        .catch(error => {
+          console.error('Error saving event data to backend:', error);
+          // Don't throw the error - we want this to be non-blocking
+        });
+      }
 
       // Insert event tags
       if (data.tags && data.tags.length > 0) {

@@ -9,7 +9,7 @@ export async function fetchUserDetails(userId) {
       .single();
 
     if (error) throw error;
-    return data; // Returns { full_name }
+    return data; // Returns { full_name, email }
   } catch (error) {
     console.error('Error fetching user details:', error.message);
     throw error;
