@@ -168,7 +168,84 @@ const ClubCreationForm = () => {
                 )}
               />
               
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Describe your club's purpose and activities" 
+                        {...field} 
+                        className="min-h-[120px]"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      A brief overview of your club's mission and activities.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Academic">Academic</SelectItem>
+                        <SelectItem value="Cultural">Cultural</SelectItem>
+                        <SelectItem value="Technical">Technical</SelectItem>
+                        <SelectItem value="Sports">Sports</SelectItem>
+                        <SelectItem value="Service">Service</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      The primary focus area of your club.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Club Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Set a secure password" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      This password will be used by club admins to login to the dashboard.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {clubCode && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+                  <h3 className="font-semibold text-green-800 mb-2">Club Created Successfully!</h3>
+                  <p className="text-green-700 mb-2">Your unique club code is:</p>
+                  <div className="bg-white p-3 rounded border border-green-300 text-center">
+                    <span className="text-xl font-mono font-bold tracking-wider">{clubCode}</span>
+                  </div>
+                  <p className="text-sm text-green-600 mt-2">
+                    Save this code! You'll need it to login to your club dashboard.
+                  </p>
+                </div>
+              )}
               
               <div className="space-y-2">
                 <Button type="submit" className="w-full" disabled={isLoading}>

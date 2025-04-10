@@ -480,7 +480,14 @@ const handleCreateEvent = () => {
                 <FileText className="mr-2 h-5 w-5" />
                 <span>Resources</span>
               </Button>
-              
+              <Button 
+                variant={activeNavItem === "settings" ? "default" : "ghost"} 
+                className="w-full justify-start text-sm lg:text-base"
+                onClick={() => {
+                  setActiveNavItem("settings");
+                  setIsMenuOpen(false);
+                }}
+              >
                 <Settings className="mr-2 h-5 w-5" />
                 <span>Settings</span>
               </Button>
