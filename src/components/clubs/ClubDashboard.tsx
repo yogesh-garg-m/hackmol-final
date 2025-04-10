@@ -178,7 +178,14 @@ const ClubDashboard = () => {
         if (recentEventsError) throw recentEventsError;
 
         // Format events data
-       
+        const formattedEvents = eventsData.map(event => ({
+          id: event.event_id,
+          title: event.name,
+          date: new Date(event.datetime).toLocaleDateString(),
+          registrations: event.current_attendees,
+          capacity: event.max_attendees || 0,
+          status: event.status
+        }));
 
         setClub({
           id: parseInt(clubId),
@@ -266,7 +273,13 @@ const handleCreateEvent = () => {
 
   if (isLoading) {
     return (
-      
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <motion.div 
+          className="flex flex-col items-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
           <motion.div 
             className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full"
             animate={{ rotate: 360 }}
@@ -375,7 +388,15 @@ const handleCreateEvent = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
       {/* Sidebar */}
-      
+      <motion.aside
+        ref={sidebarRef}
+        initial={{ x: -300 }}
+        animate={{ x: isMenuOpen ? 0 : -300 }}
+        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+        className={`fixed inset-y-0 left-0 z-[60] w-72 bg-white shadow-xl flex flex-col transform lg:translate-x-0 lg:fixed ${
+          isMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
         {/* Overlay for mobile */}
         {isMenuOpen && window.innerWidth < 1024 && (
           <motion.div 
@@ -401,7 +422,9 @@ const handleCreateEvent = () => {
                 {club?.name?.charAt(0) || "C"}
               </AvatarFallback>
             </Avatar>
-            
+            <h2 className="text-xl font-bold text-gray-800 mb-1 truncate max-w-full">
+              {club?.name || "Club Dashboard"}
+            </h2>
             <Badge className="bg-gradient-to-r from-primary/90 to-primary/70 hover:from-primary hover:to-primary/80 transition-all">
               {club?.category}
             </Badge>
@@ -411,7 +434,10 @@ const handleCreateEvent = () => {
                 <p className="font-bold text-primary">{club?.memberCount}</p>
               </div>
               <div className="h-8 w-px bg-gray-200"></div>
-              
+              <div className="text-center">
+                <p className="text-xs text-gray-500">Events</p>
+                <p className="font-bold text-primary">{club?.eventsCount}</p>
+              </div>
             </div>
             <Button 
               variant="outline" 
@@ -423,7 +449,12 @@ const handleCreateEvent = () => {
             </Button>
           </motion.div>
             
-          
+          <motion.nav 
+            className="flex-1 overflow-y-auto py-6 px-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+          >
             <div className="space-y-1">
               <Button 
                 variant={activeNavItem === "events" ? "default" : "ghost"} 

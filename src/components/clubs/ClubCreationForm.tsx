@@ -47,7 +47,7 @@ const ClubCreationForm = () => {
     setIsLoading(true);
     try {
       // Get the current user
-      
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
         throw new Error("User is not authenticated");
@@ -80,7 +80,7 @@ const ClubCreationForm = () => {
           name: values.club_name,
           description: values.description || null,
           admin_id: user.id,
-          category: values.category
+          category: values.category,
         })
         .select()
         .single();
@@ -90,7 +90,15 @@ const ClubCreationForm = () => {
       }
 
       // Generate a unique club code using the new database function
-      
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/generate_unique_club_code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ''}`,
+          'Prefer': 'return=representation'
+        }
+      });
       
       if (!response.ok) {
         throw new Error("Error generating club code: " + await response.text());
