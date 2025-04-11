@@ -342,6 +342,20 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
               <Button
                 variant="outline"
                 size="sm"
+                className="w-full justify-start mb-2 hover:bg-primary/10 transition-colors group"
+                onClick={() => handleExploreSection("Clubs")}
+              >
+                <FileText className="h-4 w-4 mr-2 group-hover:text-primary transition-colors" />
+                <span className="group-hover:text-primary transition-colors">
+                  Explore All Clubs
+                </span>
+              </Button>
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <Button
+                variant="outline"
+                size="sm"
                 className="w-full justify-start hover:bg-primary/10 transition-colors group"
                 onClick={() => handleExploreSection("Articles")}
               >

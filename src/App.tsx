@@ -22,7 +22,14 @@ import ProjectsPage from './pages/ProjectsPage';
 import ResourcesPage from './pages/ResourcesPage';
 import CreateTemporaryOpening from './pages/CreateTemporaryOpening';
 import EventAttendees from "./pages/EventAttendees";
-
+import Dashboard from "./pages/dashboard/Dashboard";
+import CalendarPage from "./pages/dashboard/Calender";
+import Clubs from "./pages/dashboard/Clubs";
+import Events from "./pages/dashboard/Events";
+import Newsletters from "./pages/dashboard/Newsletters";
+import Users from "./pages/dashboard/Users";
+import Volunteering from "./pages/dashboard/Volunteering";
+import VolunteerPage from "./pages/VolunteerPage";
 import VerifyAttendeesPage from "./pages/verify-attendees/VerifyAttendeesPage";
 import LostAndFound from "./pages/LostAndFound";
 import { useEffect, useState } from "react";
@@ -33,6 +40,7 @@ import Project from "./pages/Project";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { useConnectionListener } from './hooks/useConnectionListeners';
 import { useEventRegistrationListener } from './hooks/useEventRegistrationListener';
+import AllClubsPage from "./pages/AllClubsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -138,7 +146,8 @@ const AuthenticatedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 function App() {
-  
+  useConnectionListener(); 
+  useEventRegistrationListener();
   return (
     
     <HomepageProvider>
@@ -180,11 +189,24 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              
+              <Route
+                path="/volunteering"
+                element={
+                  <ProtectedRoute>
+                    <VolunteerPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/lost-and-found"
                 element={
                   <LostAndFound />
+                }
+              />
+              <Route
+                path="/clubs"
+                element={
+                  <AllClubsPage />
                 }
               />
               <Route
@@ -261,7 +283,55 @@ function App() {
                   <ProtectedRoute>
                     <Project />
                   </ProtectedRoute>} />
-                
+                <Route path="/dashboard" element={
+                  <ProtectedAdminRoute>
+                    <DashboardLayout>
+                      <Dashboard />
+                    </DashboardLayout>
+                  </ProtectedAdminRoute>
+                } />
+                <Route path="/dashboard/clubs" element={
+                  <ProtectedAdminRoute>
+                    <DashboardLayout>
+                      <Clubs />
+                    </DashboardLayout>
+                  </ProtectedAdminRoute>
+                } />
+                  <Route path="/dashboard/events" element={
+                    <ProtectedAdminRoute>
+                      <DashboardLayout>
+                        <Events />
+                      </DashboardLayout>
+                    </ProtectedAdminRoute>
+                  } />
+                  <Route path="/dashboard/calendar" element={
+                    <ProtectedAdminRoute>
+                      <DashboardLayout>
+                        <CalendarPage />
+                      </DashboardLayout>
+                    </ProtectedAdminRoute>
+                  } />
+                  <Route path="/dashboard/newsletters" element={
+                    <ProtectedAdminRoute>
+                      <DashboardLayout>
+                        <Newsletters />
+                      </DashboardLayout>
+                    </ProtectedAdminRoute>
+                  } />
+                    <Route path="/dashboard/volunteering" element={
+                      <ProtectedAdminRoute>
+                        <DashboardLayout>
+                          <Volunteering />
+                        </DashboardLayout>
+                      </ProtectedAdminRoute>
+                    } />
+                    <Route path="/dashboard/users" element={
+                      <ProtectedAdminRoute>
+                        <DashboardLayout>
+                          <Users />
+                        </DashboardLayout>
+                      </ProtectedAdminRoute>
+                    } />
               <Route
                 path="/verify-attendees"
                 element={

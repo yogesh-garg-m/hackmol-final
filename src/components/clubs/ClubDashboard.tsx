@@ -28,7 +28,11 @@ import {
   User,
   Eye,
   Edit2,
-  Trash2
+  Trash2,
+  GraduationCap,
+  UserCog,
+  UserCheck,
+  UserX
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,6 +55,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Loader2 } from "lucide-react";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
 
 // Custom BarChart component
 const BarChart = ({ data, className }: { data: any[], className?: string }) => {
@@ -116,6 +129,23 @@ const EVENT_STATUS = {
   CANCELLED: "Cancelled"
 } as const;
 
+// Add this interface for club members
+interface ClubMember {
+  user_id: string;
+  role: string;
+  full_name: string;
+  year_of_study: number;
+  is_admin: boolean;
+}
+
+// Add this interface for pending requests
+interface PendingRequest {
+  user_id: string;
+  full_name: string;
+  year_of_study: number;
+  joined_at: string;
+}
+
 const ClubDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -128,6 +158,19 @@ const ClubDashboard = () => {
   const [eventToCancel, setEventToCancel] = useState<number | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const [members, setMembers] = useState<ClubMember[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
+  const [isRemovingMember, setIsRemovingMember] = useState(false);
+  const [memberToUpdateRole, setMemberToUpdateRole] = useState<ClubMember | null>(null);
+  const [newRole, setNewRole] = useState("");
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
+  const [loadingPendingRequests, setLoadingPendingRequests] = useState(false);
+  const [showPendingRequests, setShowPendingRequests] = useState(false);
+  const [isApprovingRequest, setIsApprovingRequest] = useState(false);
+  const [isRejectingRequest, setIsRejectingRequest] = useState(false);
+  const [requestToProcess, setRequestToProcess] = useState<string | null>(null);
 
   useEffect(() => {
     // Verify authentication and fetch club data
@@ -269,6 +312,342 @@ const handleCreateEvent = () => {
 
   const handleVerifyAttendees = () => {
     navigate('/verify-attendees');
+  };
+
+  // Add this function to fetch club members
+  const fetchClubMembers = async () => {
+    try {
+      setLoadingMembers(true);
+      const clubId = sessionStorage.getItem('club_id');
+      
+      if (!clubId) {
+        throw new Error("Club ID not found");
+      }
+      
+      // First, get the club to find the admin_id
+      const { data: clubData, error: clubError } = await supabase
+        .from("clubs")
+        .select("admin_id")
+        .eq("club_id", parseInt(clubId))
+        .single();
+        
+      if (clubError) throw clubError;
+      
+      const adminId = clubData?.admin_id;
+      
+      // Get admin profile if admin_id exists
+      let adminProfile = null;
+      if (adminId) {
+        const { data: adminData, error: adminError } = await supabase
+          .from("profiles")
+          .select("id, full_name, year_of_study")
+          .eq("id", adminId)
+          .single();
+          
+        if (!adminError && adminData) {
+          adminProfile = {
+            user_id: adminId,
+            full_name: adminData.full_name || "Unknown User",
+            year_of_study: adminData.year_of_study || 0,
+            role: "admin",
+            is_admin: true
+          };
+        }
+      }
+      
+      // Get all approved members
+      const { data, error } = await supabase
+        .from("club_members")
+        .select("user_id, role")
+        .eq("club_id", parseInt(clubId))
+        .eq("is_approved", true);
+        
+      if (error) throw error;
+      
+      // Get user profiles for all members
+      const userIds = data?.map(member => member.user_id) || [];
+      
+      let membersWithProfiles = [];
+      
+      if (userIds.length > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, full_name, year_of_study")
+          .in("id", userIds);
+          
+        if (profilesError) throw profilesError;
+        
+        // Combine member data with profile data
+        membersWithProfiles = data?.map(member => {
+          const profile = profiles?.find(p => p.id === member.user_id);
+          return {
+            user_id: member.user_id,
+            role: member.role,
+            full_name: profile?.full_name || "Unknown User",
+            year_of_study: profile?.year_of_study || 0,
+            is_admin: member.user_id === adminId
+          };
+        }) || [];
+      }
+      
+      // Add admin to the list if not already included
+      if (adminProfile && !membersWithProfiles.some(m => m.user_id === adminId)) {
+        membersWithProfiles.unshift(adminProfile);
+      }
+      
+      // Sort to put admin at the top
+      const sortedMembers = membersWithProfiles.sort((a, b) => {
+        if (a.is_admin) return -1;
+        if (b.is_admin) return 1;
+        return 0;
+      });
+      
+      setMembers(sortedMembers);
+    } catch (error) {
+      console.error("Error fetching club members:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load club members. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingMembers(false);
+    }
+  };
+
+  // Add this function to handle member removal
+  const handleRemoveMember = async (userId: string) => {
+    try {
+      setIsRemovingMember(true);
+      const clubId = sessionStorage.getItem('club_id');
+      
+      if (!clubId) {
+        throw new Error("Club ID not found");
+      }
+      
+      // Update the member's is_approved status to false
+      const { error } = await supabase
+        .from("club_members")
+        .update({ is_approved: false })
+        .eq("club_id", parseInt(clubId))
+        .eq("user_id", userId);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setMembers(prevMembers => prevMembers.filter(member => member.user_id !== userId));
+      
+      toast({
+        title: "Member Removed",
+        description: "The member has been removed from the club.",
+      });
+    } catch (error) {
+      console.error("Error removing member:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove member. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRemovingMember(false);
+      setMemberToRemove(null);
+    }
+  };
+
+  // Add this function to fetch pending requests
+  const fetchPendingRequests = async () => {
+    try {
+      setLoadingPendingRequests(true);
+      const clubId = sessionStorage.getItem('club_id');
+      
+      if (!clubId) {
+        throw new Error("Club ID not found");
+      }
+      
+      // Get all pending requests (where is_approved is false)
+      const { data, error } = await supabase
+        .from("club_members")
+        .select("user_id, joined_at")
+        .eq("club_id", parseInt(clubId))
+        .eq("is_approved", false);
+        
+      if (error) throw error;
+      
+      // Get user profiles for all pending requests
+      const userIds = data?.map(request => request.user_id) || [];
+      
+      let requestsWithProfiles = [];
+      
+      if (userIds.length > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, full_name, year_of_study")
+          .in("id", userIds);
+          
+        if (profilesError) throw profilesError;
+        
+        // Combine request data with profile data
+        requestsWithProfiles = data?.map(request => {
+          const profile = profiles?.find(p => p.id === request.user_id);
+          return {
+            user_id: request.user_id,
+            full_name: profile?.full_name || "Unknown User",
+            year_of_study: profile?.year_of_study || 0,
+            joined_at: request.joined_at
+          };
+        }) || [];
+      }
+      
+      setPendingRequests(requestsWithProfiles);
+    } catch (error) {
+      console.error("Error fetching pending requests:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load pending requests. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingPendingRequests(false);
+    }
+  };
+
+  // Add this function to handle request approval
+  const handleApproveRequest = async (userId: string) => {
+    try {
+      setIsApprovingRequest(true);
+      setRequestToProcess(userId);
+      const clubId = sessionStorage.getItem('club_id');
+      
+      if (!clubId) {
+        throw new Error("Club ID not found");
+      }
+      
+      // Update the member's is_approved status to true
+      const { error } = await supabase
+        .from("club_members")
+        .update({ is_approved: true })
+        .eq("club_id", parseInt(clubId))
+        .eq("user_id", userId);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setPendingRequests(prevRequests => prevRequests.filter(request => request.user_id !== userId));
+      
+      // Refresh members list
+      fetchClubMembers();
+      
+      toast({
+        title: "Request Approved",
+        description: "The membership request has been approved.",
+      });
+    } catch (error) {
+      console.error("Error approving request:", error);
+      toast({
+        title: "Error",
+        description: "Failed to approve request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsApprovingRequest(false);
+      setRequestToProcess(null);
+    }
+  };
+
+  // Add this function to handle request rejection
+  const handleRejectRequest = async (userId: string) => {
+    try {
+      setIsRejectingRequest(true);
+      setRequestToProcess(userId);
+      const clubId = sessionStorage.getItem('club_id');
+      
+      if (!clubId) {
+        throw new Error("Club ID not found");
+      }
+      
+      // Delete the member entry from club_members
+      const { error } = await supabase
+        .from("club_members")
+        .delete()
+        .eq("club_id", parseInt(clubId))
+        .eq("user_id", userId);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setPendingRequests(prevRequests => prevRequests.filter(request => request.user_id !== userId));
+      
+      toast({
+        title: "Request Rejected",
+        description: "The membership request has been rejected.",
+      });
+    } catch (error) {
+      console.error("Error rejecting request:", error);
+      toast({
+        title: "Error",
+        description: "Failed to reject request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRejectingRequest(false);
+      setRequestToProcess(null);
+    }
+  };
+
+  // Add this useEffect to fetch members when the members tab is active
+  useEffect(() => {
+    if (activeNavItem === "members") {
+      fetchClubMembers();
+      fetchPendingRequests();
+    }
+  }, [activeNavItem]);
+
+  // Add this function to handle role update
+  const handleUpdateRole = async () => {
+    if (!memberToUpdateRole || !newRole.trim()) return;
+    
+    try {
+      setIsUpdatingRole(true);
+      const clubId = sessionStorage.getItem('club_id');
+      
+      if (!clubId) {
+        throw new Error("Club ID not found");
+      }
+      
+      // Update the member's role in the club_members table
+      const { error } = await supabase
+        .from("club_members")
+        .update({ role: newRole.trim() })
+        .eq("club_id", parseInt(clubId))
+        .eq("user_id", memberToUpdateRole.user_id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setMembers(prevMembers => 
+        prevMembers.map(member => 
+          member.user_id === memberToUpdateRole.user_id 
+            ? { ...member, role: newRole.trim() } 
+            : member
+        )
+      );
+      
+      toast({
+        title: "Role Updated",
+        description: `Role updated to "${newRole.trim()}" for ${memberToUpdateRole.full_name}.`,
+      });
+    } catch (error) {
+      console.error("Error updating member role:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update member role. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingRole(false);
+      setMemberToUpdateRole(null);
+      setNewRole("");
+    }
   };
 
   if (isLoading) {
@@ -1166,24 +1545,116 @@ const handleCreateEvent = () => {
                             <CardTitle>Club Members</CardTitle>
                             <CardDescription>Manage your club membership</CardDescription>
                           </div>
-                          <Button variant="outline">
-                            <UserPlus className="h-4 w-4 mr-2" />
-                            Add Member
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <div className="relative w-full md:w-60">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                              <Input placeholder="Search members..." className="pl-9" />
+                            </div>
+                            <Button 
+                              variant="outline" 
+                              className="relative"
+                              onClick={() => setShowPendingRequests(true)}
+                            >
+                              <UserPlus className="h-4 w-4 mr-2" />
+                              Pending Requests
+                              {pendingRequests.length > 0 && (
+                                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                                  {pendingRequests.length}
+                                </span>
+                              )}
+                            </Button>
+                            <Button variant="outline">
+                              <UserPlus className="h-4 w-4 mr-2" />
+                              Add Member
+                            </Button>
+                          </div>
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <div className="flex flex-col items-center justify-center py-12 text-center">
-                          <Users className="h-16 w-16 text-gray-300 mb-4" />
-                          <h3 className="text-xl font-medium mb-2">Member Management</h3>
-                          <p className="text-gray-500 text-sm mb-6 max-w-md">
-                            Member management will be available in the next update. You'll be able to invite, approve, and manage all club members from here.
-                          </p>
-                          <Button variant="outline">
-                            <BellRing className="h-4 w-4 mr-2" />
-                            Get Notified When Available
-                          </Button>
-                        </div>
+                        {loadingMembers ? (
+                          <div className="flex justify-center py-8">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                          </div>
+                        ) : members.length > 0 ? (
+                          <div className="space-y-4">
+                            <div className="rounded-md border">
+                              <div className="overflow-x-auto">
+                                <table className="w-full">
+                                  <thead>
+                                    <tr className="bg-muted/50">
+                                      <th className="px-4 py-2 text-left">Name</th>
+                                      <th className="px-4 py-2 text-left">Year</th>
+                                      <th className="px-4 py-2 text-left">Role</th>
+                                      <th className="px-4 py-2 text-right">Actions</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {members.map((member) => (
+                                      <tr key={member.user_id} className="border-t">
+                                        <td className="px-4 py-3">
+                                          <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                              <User className="h-5 w-5" />
+                                            </div>
+                                            <span className="font-medium">{member.full_name}</span>
+                                          </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                          <div className="flex items-center gap-2">
+                                            <GraduationCap className="h-4 w-4 text-primary" />
+                                            <span>Year {member.year_of_study}</span>
+                                          </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                          <Badge className={member.is_admin ? "bg-red-100 text-red-800 border-red-200" : "bg-blue-100 text-blue-800 border-blue-200"}>
+                                            {member.is_admin ? "Admin" : member.role}
+                                          </Badge>
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                          <div className="flex justify-end gap-2">
+                                            {!member.is_admin && (
+                                              <>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                                  onClick={() => {
+                                                    setMemberToUpdateRole(member);
+                                                    setNewRole(member.role);
+                                                  }}
+                                                >
+                                                  <UserCog className="h-4 w-4 mr-1" />
+                                                  Change Role
+                                                </Button>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                  onClick={() => setMemberToRemove(member.user_id)}
+                                                >
+                                                  <Trash2 className="h-4 w-4 mr-1" />
+                                                  Remove
+                                                </Button>
+                                              </>
+                                            )}
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-12">
+                            <Users className="h-16 w-16 text-gray-300 mb-4" />
+                            <h3 className="text-xl font-medium mb-2">No Members Yet</h3>
+                            <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
+                              You can add members to your club using the button above.
+                            </p>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   </motion.div>
@@ -1256,6 +1727,177 @@ const handleCreateEvent = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      <AlertDialog open={!!memberToRemove} onOpenChange={() => setMemberToRemove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Member</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove this member from the club? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, keep member</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => memberToRemove && handleRemoveMember(memberToRemove)}
+              className="bg-red-500 hover:bg-red-600"
+              disabled={isRemovingMember}
+            >
+              {isRemovingMember ? "Removing..." : "Yes, remove member"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      <AlertDialog open={!!memberToUpdateRole} onOpenChange={() => setMemberToUpdateRole(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Change Member Role</AlertDialogTitle>
+            <AlertDialogDescription>
+              Update the role for {memberToUpdateRole?.full_name}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <div className="space-y-2">
+              <label htmlFor="role" className="text-sm font-medium">
+                New Role
+              </label>
+              <Input
+                id="role"
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+                placeholder="Enter new role (e.g., Member, Officer, Treasurer)"
+                className="w-full"
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleUpdateRole}
+              disabled={isUpdatingRole || !newRole.trim()}
+            >
+              {isUpdatingRole ? "Updating..." : "Update Role"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      <Dialog open={showPendingRequests} onOpenChange={setShowPendingRequests}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Pending Membership Requests</DialogTitle>
+            <DialogDescription>
+              Review and manage pending membership requests for your club.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {loadingPendingRequests ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : pendingRequests.length > 0 ? (
+            <div className="space-y-4">
+              <div className="rounded-md border">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-muted/50">
+                        <th className="px-4 py-2 text-left">Name</th>
+                        <th className="px-4 py-2 text-left">Year</th>
+                        <th className="px-4 py-2 text-left">Requested</th>
+                        <th className="px-4 py-2 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pendingRequests.map((request) => (
+                        <tr key={request.user_id} className="border-t">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                <User className="h-5 w-5" />
+                              </div>
+                              <span className="font-medium">{request.full_name}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <GraduationCap className="h-4 w-4 text-primary" />
+                              <span>Year {request.year_of_study}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-gray-400" />
+                              <span>{new Date(request.joined_at).toLocaleDateString()}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                onClick={() => handleApproveRequest(request.user_id)}
+                                disabled={isApprovingRequest && requestToProcess === request.user_id}
+                              >
+                                {isApprovingRequest && requestToProcess === request.user_id ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                    Approving...
+                                  </>
+                                ) : (
+                                  <>
+                                    <UserCheck className="h-4 w-4 mr-1" />
+                                    Approve
+                                  </>
+                                )}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => handleRejectRequest(request.user_id)}
+                                disabled={isRejectingRequest && requestToProcess === request.user_id}
+                              >
+                                {isRejectingRequest && requestToProcess === request.user_id ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                    Rejecting...
+                                  </>
+                                ) : (
+                                  <>
+                                    <UserX className="h-4 w-4 mr-1" />
+                                    Reject
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <UserPlus className="h-16 w-16 text-gray-300 mb-4" />
+              <h3 className="text-xl font-medium mb-2">No Pending Requests</h3>
+              <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
+                There are no pending membership requests at this time.
+              </p>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPendingRequests(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

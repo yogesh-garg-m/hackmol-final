@@ -269,6 +269,9 @@ export function useHomepage() {
       case "Articles":
         navigate("/articles");
         break;
+      case "Clubs":
+        navigate("/clubs");
+        break;
       default:
         break;
     }

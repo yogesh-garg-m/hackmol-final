@@ -530,27 +530,27 @@ const CreateEventForm = () => {
       console.log("**********Inserted event ID**********:", event?.event_id);
 
       // Send event data to backend for storage (non-blocking)
-      if (event?.event_id) {
-        // Fire and forget - don't await this
-        fetch('http://localhost:3000/api/save-event', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(eventJson),
-        })
-        .then(response => {
-          if (!response.ok) {
-            console.error('Failed to save event data to backend:', response.statusText);
-          } else {
-            console.log('Event data saved to backend successfully');
-          }
-        })
-        .catch(error => {
-          console.error('Error saving event data to backend:', error);
-          // Don't throw the error - we want this to be non-blocking
-        });
-      }
+      // if (event?.event_id) {
+      //   // Fire and forget - don't await this
+      //   fetch('http://localhost:3000/api/save-event', {
+      //     method: 'POST',
+      //     headers: {
+      //       'Content-Type': 'application/json',
+      //     },
+      //     body: JSON.stringify(eventJson),
+      //   })
+      //   .then(response => {
+      //     if (!response.ok) {
+      //       console.error('Failed to save event data to backend:', response.statusText);
+      //     } else {
+      //       console.log('Event data saved to backend successfully');
+      //     }
+      //   })
+      //   .catch(error => {
+      //     console.error('Error saving event data to backend:', error);
+      //     // Don't throw the error - we want this to be non-blocking
+      //   });
+      // }
 
       // Insert event tags
       if (data.tags && data.tags.length > 0) {

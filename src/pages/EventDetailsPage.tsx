@@ -1,6 +1,5 @@
-
-import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import React, { useEffect, useState, useRef } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { EventDetails } from "@/types/event";
@@ -21,14 +20,29 @@ import {
   Globe,
   Award,
   FileText,
-  Image,
   Link2,
   ChevronLeft,
   MessageSquare,
   Share2,
   Bookmark,
+  ChevronRight,
+  X,
+  Loader2,
 } from "lucide-react";
 import { RegistrationModal } from "@/components/events/RegistrationModal";
+import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+} from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useConnections } from "@/hooks/useConnections";
+import { useAuth } from "@/hooks/useAuth";
 
 // Add the missing getStatusColor function
 const getStatusColor = (status: string) => {
@@ -46,17 +60,48 @@ const getStatusColor = (status: string) => {
   }
 };
 
+// Define the willing person interface
+interface WillingPerson {
+  id: string;
+  note: string;
+  full_name: string;
+  username: string;
+  avatar_url: string;
+  connectionStatus?: 'pending' | 'connected' | null;
+}
+
+interface RegisteredPerson {
+  id: string;
+  full_name: string;
+  username: string;
+  avatar_url: string;
+  connectionStatus?: 'pending' | 'connected' | null;
+}
+
 const EventDetailsPage = () => {
   const { eventId } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const { sendConnectionRequest } = useConnections();
   const [event, setEvent] = useState<EventDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
   const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false);
   const [registrationQuestions, setRegistrationQuestions] = useState<any[]>([]);
   const [registrationStatus, setRegistrationStatus] = useState<{
     exists: boolean;
     status: string;
   } | null>(null);
+  const [isWilling, setIsWilling] = useState(false);
+  const [willingPeople, setWillingPeople] = useState<WillingPerson[]>([]);
+  const [registeredPeople, setRegisteredPeople] = useState<RegisteredPerson[]>([]);
+  const [selectedNote, setSelectedNote] = useState<string | null>(null);
+  const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
+  const [isConnecting, setIsConnecting] = useState<string | null>(null);
+  const [isWillingNoteDialogOpen, setIsWillingNoteDialogOpen] = useState(false);
+  const [willingNote, setWillingNote] = useState("");
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const registeredScrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchEventDetails = async () => {
@@ -202,6 +247,406 @@ const EventDetailsPage = () => {
     }
   }, [eventId, toast]);
 
+  // Check if current user is willing
+  useEffect(() => {
+    const checkWillingStatus = async () => {
+      if (!eventId || !user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('willing_people')
+          .select('id, note, user_id')
+          .eq('event_id', eventId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') throw error;
+        setIsWilling(!!data);
+      } catch (error) {
+        console.error('Error checking willing status:', error);
+      }
+    };
+
+    checkWillingStatus();
+  }, [eventId, user]);
+
+  // Fetch willing people
+  const fetchWillingPeople = async () => {
+    if (!eventId) return;
+    
+    // Skip fetching if user is not logged in
+    if (!user) {
+      console.log('No user logged in, skipping willing people fetch');
+      setWillingPeople([]);
+      return;
+    }
+
+    try {
+      console.log('Fetching willing people for event:', eventId);
+      
+      // First, fetch all willing people
+      const { data, error } = await supabase
+        .from('willing_people')
+        .select(`
+          id,
+          note,
+          user_id,
+          profiles!willing_people_user_id_fkey (
+            id,
+            full_name,
+            username
+          )
+        `)
+        .eq('event_id', eventId)
+        .neq('user_id', user.id);
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Raw willing people data:', data);
+
+      // Handle the case where data might be null or empty
+      if (!data || data.length === 0) {
+        console.log('No willing people found');
+        setWillingPeople([]);
+        return;
+      }
+
+      // Format the willing people data
+      const formattedPeople: WillingPerson[] = (data as unknown as WillingPersonResponse[])
+        .filter(item => {
+          const hasProfile = item.profiles !== null;
+          if (!hasProfile) {
+            console.log('Filtering out item without profile:', item);
+          }
+          return hasProfile;
+        })
+        .map(item => ({
+          id: item.user_id,
+          note: item.note || '',
+          full_name: item.profiles?.full_name || 'Unknown User',
+          username: item.profiles?.username || item.profiles?.id || '',
+          avatar_url: '', // No avatar_url in the profiles table
+          connectionStatus: null // Default status
+        }));
+
+      // Now fetch connection status for each willing person
+      const connectionPromises = formattedPeople.map(async (person) => {
+        const { data: connectionData, error: connectionError } = await supabase
+          .from('user_connections')
+          .select('status')
+          .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+          .or(`user1_id.eq.${person.id},user2_id.eq.${person.id}`)
+          .maybeSingle();
+
+        if (connectionError && connectionError.code !== 'PGRST116') {
+          console.error('Error fetching connection status:', connectionError);
+          return person;
+        }
+
+        if (connectionData) {
+          if (connectionData.status === 'accepted') {
+            return { ...person, connectionStatus: 'connected' as const };
+          } else if (connectionData.status === 'pending') {
+            return { ...person, connectionStatus: 'pending' as const };
+          }
+        }
+
+        return person;
+      });
+
+      // Wait for all connection status checks to complete
+      const peopleWithConnections = await Promise.all(connectionPromises);
+      console.log('Final formatted willing people with connections:', peopleWithConnections);
+      setWillingPeople(peopleWithConnections);
+    } catch (error) {
+      console.error('Error fetching willing people:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch willing people',
+        variant: 'destructive'
+      });
+      // Set empty array in case of error
+      setWillingPeople([]);
+    }
+  };
+
+  // Fetch registered people
+  const fetchRegisteredPeople = async () => {
+    if (!eventId) return;
+    
+    // Skip fetching if user is not logged in
+    if (!user) {
+      console.log('No user logged in, skipping registered people fetch');
+      setRegisteredPeople([]);
+      return;
+    }
+
+    try {
+      console.log('Fetching registered people for event:', eventId);
+      
+      // Fetch all registered people with accepted status
+      const { data, error } = await supabase
+        .from('event_registrations')
+        .select(`
+          user_id,
+          profiles!event_registrations_user_id_fkey (
+            id,
+            full_name,
+            username
+          )
+        `)
+        .eq('event_id', eventId)
+        .eq('status', 'accepted')
+        .neq('user_id', user.id);
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Raw registered people data:', data);
+
+      // Handle the case where data might be null or empty
+      if (!data || data.length === 0) {
+        console.log('No registered people found');
+        setRegisteredPeople([]);
+        return;
+      }
+
+      // Format the registered people data
+      const formattedPeople: RegisteredPerson[] = data
+        .filter(item => item.profiles !== null)
+        .map(item => ({
+          id: item.user_id,
+          full_name: item.profiles?.full_name || 'Unknown User',
+          username: item.profiles?.username || item.profiles?.id || '',
+          avatar_url: '', // No avatar_url in the profiles table
+          connectionStatus: null // Default status
+        }));
+
+      // Now fetch connection status for each registered person
+      const connectionPromises = formattedPeople.map(async (person) => {
+        const { data: connectionData, error: connectionError } = await supabase
+          .from('user_connections')
+          .select('status')
+          .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+          .or(`user1_id.eq.${person.id},user2_id.eq.${person.id}`)
+          .maybeSingle();
+
+        if (connectionError && connectionError.code !== 'PGRST116') {
+          console.error('Error fetching connection status:', connectionError);
+          return person;
+        }
+
+        if (connectionData) {
+          if (connectionData.status === 'accepted') {
+            return { ...person, connectionStatus: 'connected' as const };
+          } else if (connectionData.status === 'pending') {
+            return { ...person, connectionStatus: 'pending' as const };
+          }
+        }
+
+        return person;
+      });
+
+      // Wait for all connection status checks to complete
+      const peopleWithConnections = await Promise.all(connectionPromises);
+      console.log('Final formatted registered people with connections:', peopleWithConnections);
+      setRegisteredPeople(peopleWithConnections);
+    } catch (error) {
+      console.error('Error fetching registered people:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch registered people',
+        variant: 'destructive'
+      });
+      // Set empty array in case of error
+      setRegisteredPeople([]);
+    }
+  };
+
+  // Fetch willing people on component mount
+  useEffect(() => {
+    fetchWillingPeople();
+    fetchRegisteredPeople();
+  }, [eventId, user]);
+
+  // Subscribe to willing people changes
+  useEffect(() => {
+    if (!eventId) return;
+
+    const channel = supabase
+      .channel(`willing_people:${eventId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'willing_people',
+          filter: `event_id=eq.${eventId}`
+        },
+        () => {
+          fetchWillingPeople();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [eventId]);
+
+  // Subscribe to event registrations changes
+  useEffect(() => {
+    if (!eventId) return;
+
+    const channel = supabase
+      .channel(`event_registrations:${eventId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'event_registrations',
+          filter: `event_id=eq.${eventId}`
+        },
+        () => {
+          fetchRegisteredPeople();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [eventId]);
+
+  const setWillingStatus = async (value: boolean) => {
+    if (!eventId || !user) return;
+
+    try {
+      if (value) {
+        // Show note dialog first
+        setIsWillingNoteDialogOpen(true);
+        return;
+      } else {
+        // Remove user from willing people
+        const { error } = await supabase
+          .from('willing_people')
+          .delete()
+          .eq('event_id', eventId)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+        
+        setIsWilling(false);
+        toast({
+          title: "Interest Removed",
+          description: "You've removed your interest from this event",
+        });
+      }
+    } catch (error) {
+      console.error('Error updating willing status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update your interest status. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleWillingNoteSubmit = async () => {
+    if (!eventId || !user) return;
+
+    try {
+      // Add user to willing people with the note
+      const { error } = await supabase
+        .from('willing_people')
+        .insert({
+          event_id: eventId,
+          user_id: user.id,
+          note: willingNote.trim() || null
+        });
+
+      if (error) throw error;
+
+      setIsWilling(true);
+      setIsWillingNoteDialogOpen(false);
+      setWillingNote("");
+      
+      toast({
+        title: "Interest Added",
+        description: "You've shown interest in this event",
+      });
+    } catch (error) {
+      console.error('Error adding willing status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add your interest. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleConnect = async (userId: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to connect with users",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setIsConnecting(userId);
+      
+      // Immediately update UI to show pending status
+      setWillingPeople(prevPeople => 
+        prevPeople.map(person => 
+          person.id === userId 
+            ? { ...person, connectionStatus: 'pending' as const } 
+            : person
+        )
+      );
+      
+      // Send the connection request
+      await sendConnectionRequest(userId);
+      
+      toast({
+        title: "Connection Request Sent",
+        description: "Your connection request has been sent successfully",
+      });
+    } catch (error) {
+      console.error('Error sending connection request:', error);
+      
+      // Revert UI if request failed
+      setWillingPeople(prevPeople => 
+        prevPeople.map(person => 
+          person.id === userId 
+            ? { ...person, connectionStatus: null } 
+            : person
+        )
+      );
+      
+      toast({
+        title: "Error",
+        description: "Failed to send connection request. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsConnecting(null);
+    }
+  };
+
+  const openNoteDialog = (note: string) => {
+    setSelectedNote(note);
+    setIsNoteDialogOpen(true);
+  };
+
   const handleRegisterClick = async () => {
     try {
       // Fetch questions for this event
@@ -235,6 +680,35 @@ const EventDetailsPage = () => {
       description: "Event link has been copied to clipboard",
     });
   };
+
+  // Add custom scrollbar styles
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 10px;
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -295,7 +769,205 @@ const EventDetailsPage = () => {
         </div>
 
         {/* Main Content & Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Willing People Section - Left Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-24">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Willing to Join</h2>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setWillingStatus(!isWilling)}
+                >
+                  {isWilling ? 'Remove Interest' : 'Show Interest'}
+                </Button>
+              </div>
+              
+              {willingPeople.length > 0 ? (
+                <div 
+                  ref={scrollContainerRef}
+                  className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar"
+                >
+                  {willingPeople.map((person) => (
+                    <div 
+                      key={person.id} 
+                      className={`flex items-center justify-between p-3 rounded-lg transition-all duration-200 ${
+                        person.connectionStatus === 'connected' 
+                          ? 'bg-green-50 hover:bg-green-100 border border-green-200' 
+                          : person.connectionStatus === 'pending'
+                            ? 'bg-blue-50 hover:bg-blue-100 border border-blue-200'
+                            : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage src={person.avatar_url} />
+                          <AvatarFallback>{person.full_name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className={`font-medium ${
+                            person.connectionStatus === 'connected' 
+                              ? 'text-green-800' 
+                              : person.connectionStatus === 'pending'
+                                ? 'text-blue-800'
+                                : 'text-gray-800'
+                          }`}>{person.full_name}</p>
+                          <div className="flex items-center gap-2">
+                            {person.note && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className={`h-6 px-2 text-xs ${
+                                  person.connectionStatus === 'connected' 
+                                    ? 'text-green-700 hover:text-green-900 hover:bg-green-200' 
+                                    : person.connectionStatus === 'pending'
+                                      ? 'text-blue-700 hover:text-blue-900 hover:bg-blue-200'
+                                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-200'
+                                }`}
+                                onClick={() => openNoteDialog(person.note)}
+                              >
+                                <MessageSquare className="h-3 w-3 mr-1" />
+                                Note
+                              </Button>
+                            )}
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className={`h-6 px-2 text-xs ${
+                                person.connectionStatus === 'connected' 
+                                  ? 'text-green-700 hover:text-green-900 hover:bg-green-200' 
+                                  : person.connectionStatus === 'pending'
+                                    ? 'text-blue-700 hover:text-blue-900 hover:bg-blue-200'
+                                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-200'
+                              }`}
+                              onClick={() => navigate(`/profile/${person.username}`)}
+                            >
+                              <ChevronRight className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                      <Button 
+                        variant={person.connectionStatus === 'connected' ? "outline" : "default"}
+                        size="sm"
+                        disabled={isConnecting === person.id || person.connectionStatus === 'pending' || person.connectionStatus === 'connected'}
+                        onClick={() => handleConnect(person.id)}
+                        className={`${
+                          person.connectionStatus === 'connected' 
+                            ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200' 
+                            : person.connectionStatus === 'pending'
+                              ? 'bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200'
+                              : 'bg-primary text-white hover:bg-primary/90'
+                        }`}
+                      >
+                        {isConnecting === person.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : person.connectionStatus === 'pending' ? (
+                          "Pending"
+                        ) : person.connectionStatus === 'connected' ? (
+                          "Connected"
+                        ) : (
+                          "Connect"
+                        )}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No one has shown interest yet. Be the first one!
+                </div>
+              )}
+            </div>
+
+            {/* Registered People Section */}
+            <div className="bg-white rounded-lg shadow-sm p-6 mt-6 sticky top-24">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Registered Attendees</h2>
+              </div>
+              
+              {registeredPeople.length > 0 ? (
+                <div 
+                  ref={registeredScrollContainerRef}
+                  className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar"
+                >
+                  {registeredPeople.map((person) => (
+                    <div 
+                      key={person.id} 
+                      className={`flex items-center justify-between p-3 rounded-lg transition-all duration-200 ${
+                        person.connectionStatus === 'connected' 
+                          ? 'bg-green-50 hover:bg-green-100 border border-green-200' 
+                          : person.connectionStatus === 'pending'
+                            ? 'bg-blue-50 hover:bg-blue-100 border border-blue-200'
+                            : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage src={person.avatar_url} />
+                          <AvatarFallback>{person.full_name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className={`font-medium ${
+                            person.connectionStatus === 'connected' 
+                              ? 'text-green-800' 
+                              : person.connectionStatus === 'pending'
+                                ? 'text-blue-800'
+                                : 'text-gray-800'
+                          }`}>{person.full_name}</p>
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className={`h-6 px-2 text-xs ${
+                                person.connectionStatus === 'connected' 
+                                  ? 'text-green-700 hover:text-green-900 hover:bg-green-200' 
+                                  : person.connectionStatus === 'pending'
+                                    ? 'text-blue-700 hover:text-blue-900 hover:bg-blue-200'
+                                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-200'
+                              }`}
+                              onClick={() => navigate(`/profile/${person.username}`)}
+                            >
+                              <ChevronRight className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                      <Button 
+                        variant={person.connectionStatus === 'connected' ? "outline" : "default"}
+                        size="sm"
+                        disabled={isConnecting === person.id || person.connectionStatus === 'pending' || person.connectionStatus === 'connected'}
+                        onClick={() => handleConnect(person.id)}
+                        className={`${
+                          person.connectionStatus === 'connected' 
+                            ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200' 
+                            : person.connectionStatus === 'pending'
+                              ? 'bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200'
+                              : 'bg-primary text-white hover:bg-primary/90'
+                        }`}
+                      >
+                        {isConnecting === person.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : person.connectionStatus === 'pending' ? (
+                          "Pending"
+                        ) : person.connectionStatus === 'connected' ? (
+                          "Connected"
+                        ) : (
+                          "Connect"
+                        )}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No registered attendees yet.
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Main Info Column */}
           <div className="lg:col-span-2">
             {/* Quick Info */}
@@ -751,6 +1423,49 @@ const EventDetailsPage = () => {
           </div>
         </div>
       </main>
+
+      {/* Note Dialog */}
+      <Dialog open={isNoteDialogOpen} onOpenChange={setIsNoteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>User Note</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4 p-4 bg-gray-50 rounded-md">
+            <p className="text-gray-700">{selectedNote}</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Willing Note Dialog */}
+      <Dialog open={isWillingNoteDialogOpen} onOpenChange={setIsWillingNoteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add a Note (Optional)</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4">
+            <textarea
+              className="w-full p-3 border rounded-md min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="Write a note to share with others interested in this event..."
+              value={willingNote}
+              onChange={(e) => setWillingNote(e.target.value)}
+            />
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsWillingNoteDialogOpen(false);
+                setWillingNote("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleWillingNoteSubmit}>
+              Show Interest
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Add the registration modal */}
       {event && (
