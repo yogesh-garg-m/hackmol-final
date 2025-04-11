@@ -32,7 +32,7 @@ async function sendEmail({ toUserId, subject, content }) {
     // HTML template with red background and branding
     const htmlContent = `
       <div style="background-color: #ff0000; padding: 20px; color: white; text-align: center;">
-        <h2>Team Nyquix</h2>
+        <h2>Campus SETU</h2>
       </div>
       <div style="padding: 20px;">
         ${content}
@@ -72,7 +72,7 @@ async function sendDirectEmail({ to, subject, content, htmlContent }) {
     // Use provided HTML content or wrap plain content in our template
     sendSmtpEmail.htmlContent = htmlContent || `
       <div style="background-color: #ff0000; padding: 20px; color: white; text-align: center;">
-        <h2>Team Nyquix</h2>
+        <h2>Campus SETU</h2>
       </div>
       <div style="padding: 20px;">
         ${content}

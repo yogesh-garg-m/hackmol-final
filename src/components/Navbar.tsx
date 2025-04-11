@@ -59,7 +59,7 @@ const Navbar = () => {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <Calendar className="h-6 w-6 text-primary" />
-          <span className="font-heading font-bold text-lg">Club Scheduler</span>
+          <span className="font-heading font-bold text-lg">Campus SETU</span>
         </Link>
 
         <div className="flex items-center gap-4">
