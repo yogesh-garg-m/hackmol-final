@@ -1,71 +1,494 @@
+import React, { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Search, Calendar, Users, Badge } from 'lucide-react';
-import Navbar from '@/components/Navbar';
+import {
+  ArrowRight,
+  Users,
+  Calendar,
+  Trophy,
+  Zap,
+  Mail,
+  Globe,
+  Brain,
+  Heart,
+  MapPin,
+  Search,
+  Shield,
+  Sparkles,
+  QrCode,
+  Camera,
+  BookOpen,
+  GraduationCap,
+  Target,
+  Star,
+  Lightbulb,
+  Clock,
+  Award,
+  Megaphone,
+  Coffee,
+  UserCog,
+  Settings,
+} from "lucide-react";
+import { motion, useScroll, useTransform, useInView } from "framer-motion";
 
 const Index = () => {
+  const [scrollY, setScrollY] = useState(0);
+  const { scrollY: motionScrollY } = useScroll();
+
+  // Header transparency based on scroll
+  const headerOpacity = useTransform(motionScrollY, [0, 100], [0.7, 0.95]);
+  const headerBlur = useTransform(motionScrollY, [0, 100], [20, 40]);
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const features = [
+    { icon: Users, title: "Smart Clubs", desc: "AI-powered club matching" },
+    { icon: Calendar, title: "Events Hub", desc: "Seamless event discovery" },
+    { icon: QrCode, title: "QR Attendance", desc: "One-tap check-ins" },
+    { icon: Brain, title: "AI Matching", desc: "Connect with like minds" },
+    { icon: Trophy, title: "Achievements", desc: "Track your progress" },
+    { icon: Lightbulb, title: "Innovation", desc: "Spark new ideas" },
+    { icon: Target, title: "Goals", desc: "Set and achieve targets" },
+    { icon: Star, title: "Recognition", desc: "Get noticed for your work" },
+    { icon: Clock, title: "Real-time", desc: "Live updates and alerts" },
+    { icon: Award, title: "Competitions", desc: "Campus-wide contests" },
+    { icon: Megaphone, title: "Announcements", desc: "Stay informed" },
+    { icon: Coffee, title: "Social", desc: "Connect over coffee" },
+    { icon: BookOpen, title: "Resources", desc: "Academic materials" },
+    { icon: Shield, title: "Security", desc: "Safe environment" },
+    { icon: Zap, title: "Fast Access", desc: "Quick navigation" },
+    { icon: Globe, title: "Global Connect", desc: "International network" },
+  ];
+
   return (
-    <div className="min-h-screen">
-      <Navbar />
-      
-      <main className="pt-24">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white overflow-hidden">
+      {/* Fixed Header */}
+      <motion.header
+        className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+        style={{
+          backgroundColor: `rgba(15, 23, 42, ${0.7 + scrollY * 0.001})`,
+          backdropFilter: `blur(${Math.min(scrollY * 0.1, 20)}px)`,
+          borderBottom:
+            scrollY > 50 ? "1px solid rgba(255,255,255,0.1)" : "none",
+        }}
+      >
+        <div className="container mx-auto px-6 flex justify-between items-center h-16">
+          <motion.div
+            className="flex items-center space-x-3"
+            whileHover={{ scale: 1.05 }}
+          >
+            <GraduationCap className="h-8 w-8 text-blue-400" />
+            <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+              Campus SETU
+            </span>
+          </motion.div>
+
+          <nav className="hidden md:flex items-center space-x-8">
+            {["Features", "Services", "Contact"].map((item) => (
+              <motion.a
+                key={item}
+                href={`#${item.toLowerCase()}`}
+                className="text-gray-300 hover:text-white transition-colors relative group"
+                whileHover={{ y: -2 }}
+              >
+                {item}
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-400 transition-all duration-300 group-hover:w-full"></span>
+              </motion.a>
+            ))}
+          </nav>
+
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 border-0 shadow-lg"
+              onClick={() => navigate("/signin")}
+            >
+              Login
+            </Button>
+          </motion.div>
+        </div>
+      </motion.header>
+
+      <main className="pt-16">
         {/* Hero Section */}
-        <section className="container mx-auto px-4 py-16 animate-fadeIn">
-          <div className="text-center max-w-3xl mx-auto space-y-6">
-            <h1 className="font-heading text-5xl font-bold text-gray-900 leading-tight">
-              Discover Amazing Events in Your Community
-            </h1>
-            <p className="text-lg text-gray-600">
-              Join workshops, hackathons, and more. Connect with clubs and organizations that match your interests.
-            </p>
-            <div className="flex items-center justify-center space-x-4 pt-4">
-              <Button size="lg" className="bg-primary hover:bg-primary/90">
-                Browse Events
-              </Button>
-              <Button size="lg" variant="outline">
-                Start a Club
-              </Button>
-            </div>
+        <section className="min-h-screen flex items-center justify-center relative">
+          <div className="container mx-auto px-6 text-center relative z-10">
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1 }}
+              className="space-y-8"
+            >
+              <motion.h1
+                className="text-6xl md:text-8xl font-bold"
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 1.2 }}
+              >
+                <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  Campus SETU
+                </span>
+              </motion.h1>
+
+              <motion.div
+                className="text-2xl md:text-4xl text-gray-300 font-light"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                Connect. <span className="text-blue-400">Collaborate.</span>{" "}
+                <span className="text-purple-400">Contribute.</span>
+              </motion.div>
+
+              <motion.p
+                className="text-lg text-gray-400 max-w-2xl mx-auto"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 }}
+              >
+                Transforming student life through smart campus engagement
+              </motion.p>
+
+              {/* CTA Buttons */}
+              <motion.div
+                className="flex flex-col sm:flex-row gap-6 justify-center items-center pt-8"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1 }}
+              >
+                <motion.div
+                  whileHover={{
+                    scale: 1.05,
+                    boxShadow: "0 0 30px rgba(59, 130, 246, 0.5)",
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    size="lg"
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-4 text-lg font-semibold shadow-2xl border-0"
+                    onClick={() => navigate("/signup")}
+                  >
+                    Explore Campus <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </motion.div>
+
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-2 border-gray-800 text-gray-800 hover:bg-gray-100 px-8 py-4 text-lg font-semibold"
+                    onClick={() => navigate("/signup")}
+                  >
+                    Join Now
+                  </Button>
+                </motion.div>
+              </motion.div>
+
+              {/* Live Stats */}
+              <motion.div
+                className="grid grid-cols-3 gap-8 mt-16 max-w-lg mx-auto"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.2 }}
+              >
+                {[
+                  { count: "1,423+", label: "Events" },
+                  { count: "312", label: "Clubs" },
+                  { count: "8,756", label: "Students" },
+                ].map((stat, index) => (
+                  <motion.div
+                    key={stat.label}
+                    className="text-center"
+                    whileHover={{ scale: 1.1 }}
+                  >
+                    <div className="text-2xl font-bold text-blue-400">
+                      {stat.count}
+                    </div>
+                    <div className="text-gray-500 text-sm">{stat.label}</div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </motion.div>
           </div>
         </section>
 
-        {/* Features Section */}
-        <section className="bg-gray-50 py-24 mt-16">
-          <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-3 gap-8">
-              <FeatureCard 
-                icon={<Calendar className="h-8 w-8 text-primary" />}
-                title="Easy Scheduling"
-                description="Find and join events that match your schedule and interests"
-              />
-              <FeatureCard 
-                icon={<Users className="h-8 w-8 text-primary" />}
-                title="Join Communities"
-                description="Connect with clubs and organizations that share your passion"
-              />
-              <FeatureCard 
-                icon={<Badge className="h-8 w-8 text-primary" />}
-                title="Track Achievements"
-                description="Earn badges and showcase your participation in events"
-              />
-            </div>
-          </div>
-        </section>
+        {/* Features Infinite Scroll Section */}
+        <FeaturesInfiniteScroll features={features} />
+
+        {/* Services Section */}
+        <ServicesSection />
+
+        {/* Footer */}
+        <FooterSection />
       </main>
     </div>
   );
 };
 
-const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) => {
+// Features Infinite Scroll Component
+const FeaturesInfiniteScroll = ({ features }: { features: any[] }) => {
+  const ref = React.useRef(null);
+  const isInView = useInView(ref, { once: true });
+
+  // Split features into two arrays for two rows
+  const firstRowFeatures = features.slice(0, Math.ceil(features.length / 2));
+  const secondRowFeatures = features.slice(Math.ceil(features.length / 2));
+
   return (
-    <div className="card-hover rounded-xl p-6 bg-white">
-      <div className="space-y-4">
-        {icon}
-        <h3 className="font-heading font-semibold text-xl">{title}</h3>
-        <p className="text-gray-600">{description}</p>
+    <section ref={ref} id="features" className="py-32 relative overflow-hidden">
+      <div className="container mx-auto px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          className="text-center mb-16"
+        >
+          <h2 className="text-4xl font-bold text-white mb-4">Smart Features</h2>
+          <p className="text-gray-400 max-w-2xl mx-auto">
+            Discover powerful tools designed to enhance your campus experience
+          </p>
+        </motion.div>
+
+        {/* First Row - Left to Right */}
+        <div className="relative mb-8 overflow-hidden">
+          <motion.div
+            className="flex gap-6 w-max"
+            animate={{
+              x: [0, -1920],
+            }}
+            transition={{
+              x: {
+                repeat: Infinity,
+                repeatType: "loop",
+                duration: 30,
+                ease: "linear",
+              },
+            }}
+            whileHover={{ animationPlayState: "paused" }}
+            style={{ animationPlayState: "running" }}
+          >
+            {[
+              ...firstRowFeatures,
+              ...firstRowFeatures,
+              ...firstRowFeatures,
+            ].map((feature, index) => (
+              <FeatureCard key={`first-${index}`} feature={feature} />
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Second Row - Right to Left */}
+        <div className="relative overflow-hidden">
+          <motion.div
+            className="flex gap-6 w-max"
+            animate={{
+              x: [-1920, 0],
+            }}
+            transition={{
+              x: {
+                repeat: Infinity,
+                repeatType: "loop",
+                duration: 30,
+                ease: "linear",
+              },
+            }}
+            whileHover={{ animationPlayState: "paused" }}
+            style={{ animationPlayState: "running" }}
+          >
+            {[
+              ...secondRowFeatures,
+              ...secondRowFeatures,
+              ...secondRowFeatures,
+            ].map((feature, index) => (
+              <FeatureCard key={`second-${index}`} feature={feature} />
+            ))}
+          </motion.div>
+        </div>
       </div>
-    </div>
+    </section>
+  );
+};
+
+// Individual Feature Card Component
+const FeatureCard = ({ feature }: { feature: any }) => {
+  return (
+    <motion.div
+      className="group cursor-pointer p-6 bg-gray-800/30 border border-gray-700 backdrop-blur-sm transition-all duration-500 hover:bg-gray-700/40 min-w-[200px] flex-shrink-0"
+      whileHover={{
+        scale: 1.05,
+        rotateY: 10,
+        boxShadow: "0 20px 40px rgba(0,0,0,0.3)",
+      }}
+      style={{
+        transformStyle: "preserve-3d",
+      }}
+    >
+      <motion.div
+        className="flex flex-col items-center text-center space-y-3"
+        whileHover={{ z: 10 }}
+      >
+        <feature.icon className="w-8 h-8 text-gray-400 group-hover:text-blue-400 transition-colors duration-300" />
+        <h3 className="font-semibold text-white">{feature.title}</h3>
+        <p className="text-sm text-gray-400">{feature.desc}</p>
+      </motion.div>
+
+      {/* Glow effect on hover */}
+      <motion.div
+        className="absolute inset-0"
+        initial={{ boxShadow: "0 0 0px rgba(59, 130, 246, 0)" }}
+        whileHover={{
+          boxShadow: "0 0 30px rgba(59, 130, 246, 0.3)",
+        }}
+        transition={{ duration: 0.3 }}
+      />
+    </motion.div>
+  );
+};
+
+// Services Section with Updated Cards
+const ServicesSection = () => {
+  return (
+    <section id="services" className="py-32">
+      <div className="container mx-auto px-6">
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* Student Portal */}
+          <motion.div
+            initial={{ opacity: 0, x: -100 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            whileHover={{ scale: 1.02 }}
+            className="bg-gradient-to-br from-blue-900/30 to-indigo-900/30 backdrop-blur-xl p-8 border border-blue-500/20"
+          >
+            <div className="text-center">
+              <GraduationCap className="w-16 h-16 text-blue-400 mx-auto mb-6" />
+              <h3 className="text-3xl font-bold text-white mb-4">
+                Student Portal
+              </h3>
+              <p className="text-gray-300 mb-6">
+                Access events, clubs, and campus resources
+              </p>
+              <div className="bg-black/20 p-4 mb-6">
+                <Users className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-400">
+                  Connect • Explore • Engage
+                </p>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Club Admin Page */}
+          <motion.div
+            initial={{ opacity: 0, y: 100 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.02 }}
+            className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-xl p-8 border border-purple-500/20"
+          >
+            <div className="text-center">
+              <UserCog className="w-16 h-16 text-purple-400 mx-auto mb-6" />
+              <h3 className="text-3xl font-bold text-white mb-4">Club Admin</h3>
+              <p className="text-gray-300 mb-6">
+                Manage your club events and members
+              </p>
+              <div className="bg-black/20 p-4 mb-6">
+                <Calendar className="w-8 h-8 text-purple-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-400">Create • Manage • Track</p>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Admin Page */}
+          <motion.div
+            initial={{ opacity: 0, x: 100 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            whileHover={{ scale: 1.02 }}
+            className="bg-gradient-to-br from-emerald-900/30 to-green-900/30 backdrop-blur-xl p-8 border border-emerald-500/20"
+          >
+            <div className="text-center">
+              <Settings className="w-16 h-16 text-emerald-400 mx-auto mb-6" />
+              <h3 className="text-3xl font-bold text-white mb-4">
+                Admin Panel
+              </h3>
+              <p className="text-gray-300 mb-6">
+                Oversee campus activities and analytics
+              </p>
+              <div className="bg-black/20 p-4 mb-6">
+                <Shield className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-400">
+                  Monitor • Control • Analyze
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// Footer Section
+const FooterSection = () => {
+  return (
+    <footer className="py-20 bg-gradient-to-t from-black to-gray-900">
+      <div className="container mx-auto px-6 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+        >
+          <h2 className="text-4xl font-bold text-white mb-6">
+            Your Campus, Reimagined
+          </h2>
+          <p className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
+            Ready to transform your university experience? Join thousands of
+            students already connected.
+          </p>
+
+          <motion.div
+            whileHover={{
+              scale: 1.05,
+              boxShadow: "0 0 30px rgba(147, 51, 234, 0.5)",
+            }}
+            whileTap={{ scale: 0.95 }}
+            className="inline-block"
+          >
+            <Button
+              size="lg"
+              className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-12 py-4 text-lg font-semibold border-0 shadow-2xl"
+            >
+              Get Started Today <Sparkles className="ml-2 h-5 w-5" />
+            </Button>
+          </motion.div>
+
+          <div className="pt-8 border-t border-gray-800">
+            <div className="flex flex-col items-center space-y-4">
+              <p className="text-gray-400 flex items-center gap-2">
+                Developed with{" "}
+                <Heart className="h-4 w-4 text-red-500" fill="currentColor" />{" "}
+                by Yogesh
+              </p>
+              <div className="flex items-center gap-2 text-gray-500">
+                <Mail className="h-4 w-4" />
+                <a
+                  href="mailto:gargy947@gmail.com"
+                  className="hover:text-blue-400 transition-colors duration-300"
+                >
+                  gargy947@gmail.com
+                </a>
+              </div>
+              <p className="text-sm text-gray-600">
+                &copy; 2024 Campus SETU. Revolutionizing university life.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </footer>
   );
 };
 
