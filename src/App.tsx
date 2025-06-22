@@ -41,6 +41,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { useConnectionListener } from './hooks/useConnectionListeners';
 import { useEventRegistrationListener } from './hooks/useEventRegistrationListener';
 import AllClubsPage from "./pages/AllClubsPage";
+import { useSignupListener } from "./hooks/useSignupListener";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -148,6 +149,7 @@ const AuthenticatedRoute = ({ children }: { children: React.ReactNode }) => {
 function App() {
   useConnectionListener(); 
   useEventRegistrationListener();
+  useSignupListener();
   return (
     
     <HomepageProvider>
