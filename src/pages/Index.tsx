@@ -218,6 +218,14 @@ const Index = () => {
               >
                 Transforming student life through smart campus engagement
               </motion.p>
+              <motion.p
+                className="text-lg text-gray-400 max-w-2xl mx-auto"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 }}
+              >
+                *For now, website can be best viewed on desktop only*
+              </motion.p>
 
               {/* CTA Buttons */}
               <motion.div
