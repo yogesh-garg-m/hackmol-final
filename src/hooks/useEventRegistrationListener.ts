@@ -80,16 +80,17 @@ export function useEventRegistrationListener() {
               `;
               
               // Send email
-              await fetch('http://localhost:3000/send-direct', {
-                method: 'POST',
+              await fetch("http://localhost:3000/send-direct", {
+                method: "POST",
                 headers: {
-                  'Content-Type': 'application/json',
+                  "Content-Type": "application/json",
+                  "x-api-key": import.meta.env.VITE_EMAIL_SECRET,
                 },
                 body: JSON.stringify({
                   to: email,
                   subject,
                   content,
-                  htmlContent
+                  htmlContent,
                 }),
               });
               
@@ -188,16 +189,17 @@ export function useEventRegistrationListener() {
               `;
               
               // Send email
-              await fetch('http://localhost:3000/send-direct', {
-                method: 'POST',
+              await fetch("http://localhost:3000/send-direct", {
+                method: "POST",
                 headers: {
-                  'Content-Type': 'application/json',
+                  "Content-Type": "application/json",
+                  "x-api-key": import.meta.env.VITE_EMAIL_SECRET,
                 },
                 body: JSON.stringify({
                   to: email,
                   subject,
                   content,
-                  htmlContent
+                  htmlContent,
                 }),
               });
               

@@ -66,6 +66,7 @@ export function useSignupListener() {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
+                "x-api-key": import.meta.env.VITE_EMAIL_SECRET,
               },
               body: JSON.stringify({
                 to: email,

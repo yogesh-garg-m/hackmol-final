@@ -223,6 +223,33 @@
     transition: opacity 0.15s ease-in-out;
   }
 
+  .honeycomb-bg {
+    position: relative;
+    transition: all 0.3s ease;
+  }
+
+  .honeycomb-bg:hover {
+    filter: brightness(1.2) contrast(1.1);
+  }
+  
+  .message-box {
+    @apply relative bg-gray-800/95 backdrop-blur-md border border-gray-600/50 rounded-lg px-4 py-3 shadow-2xl max-w-[280px];
+    background: linear-gradient(135deg, rgba(31, 41, 55, 0.95) 0%, rgba(17, 24, 39, 0.95) 100%);
+    box-shadow: 
+      0 20px 25px -5px rgba(0, 0, 0, 0.3),
+      0 10px 10px -5px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .message-arrow {
+    @apply absolute left-1/2 transform -translate-x-1/2 top-full;
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 10px solid rgba(31, 41, 55, 0.95);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  }
   /* Enhanced timeline styling from original */
   .timeline-line {
     @apply absolute left-[16px] top-[30px] w-[2px] h-[calc(100%-60px)] bg-gradient-to-b from-primary via-secondary/70 to-secondary/20 will-change-transform;

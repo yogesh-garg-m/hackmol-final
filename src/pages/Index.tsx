@@ -29,11 +29,18 @@ import {
   Coffee,
   UserCog,
   Settings,
+  CheckCircle,
+  Play,
 } from "lucide-react";
+
 import { motion, useScroll, useTransform, useInView } from "framer-motion";
+import { MessageDialog } from "@/components/ui/message-dialog";
 
 const Index = () => {
   const [scrollY, setScrollY] = useState(0);
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [dialogPosition, setDialogPosition] = useState({ x: 0, y: 0 });
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const { scrollY: motionScrollY } = useScroll();
 
   // Header transparency based on scroll
@@ -44,8 +51,17 @@ const Index = () => {
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("mousemove", handleMouseMove);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
   }, []);
 
   const features = [
@@ -66,6 +82,42 @@ const Index = () => {
     { icon: Zap, title: "Fast Access", desc: "Quick navigation" },
     { icon: Globe, title: "Global Connect", desc: "International network" },
   ];
+
+  const serviceFeatures = {
+    student: [
+      "Browse and join clubs easily",
+      "Access AI-moderated academic resources",
+      "Discover campus events and participants",
+      "Collaborate or create teams for projects",
+      "Connect with like-minded peers",
+      "Real-time AI notifications",
+    ],
+    club: [
+      "Create and manage events with ease",
+      "Secure and fast attendee management",
+      "Send announcements",
+      "Manage club resources",
+      "Analytics and insights",
+      "Manage Club Members",
+    ],
+    admin: [
+      "Monitor all campus activities",
+      "User management system",
+      "Generate detailed reports about everything",
+      "Security oversight & emergency alerts",
+      "System configuration",
+      "Data analytics interactive dashboard",
+    ],
+  };
+
+  const handleCardHover = (cardType: string, event: React.MouseEvent) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setDialogPosition({
+      x: rect.left + rect.width / 2,
+      y: rect.top - 10,
+    });
+    setHoveredCard(cardType);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black text-white overflow-hidden">
@@ -91,7 +143,7 @@ const Index = () => {
           </motion.div>
 
           <nav className="hidden md:flex items-center space-x-8">
-            {["Features", "Services", "Contact"].map((item) => (
+            {["Features", "Services", "About", "Contact"].map((item) => (
               <motion.a
                 key={item}
                 href={`#${item.toLowerCase()}`}
@@ -117,7 +169,19 @@ const Index = () => {
 
       <main className="pt-16">
         {/* Hero Section */}
-        <section className="min-h-screen flex items-center justify-center relative">
+        <section className="min-h-screen flex items-center justify-center relative overflow-hidden">
+          {/* Honeycomb Background */}
+          <div
+            className="absolute inset-0 honeycomb-bg opacity-30"
+            style={{
+              background: `radial-gradient(circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(59, 130, 246, 0.3) 0%, transparent 300px), url("data:image/svg+xml,%3Csvg width='60' height='52' viewBox='0 0 60 52' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234F46E5' fill-opacity='0.1'%3E%3Cpath d='M22 38V14l11-7v24l-11 7zm0 0l11 7h22l-11-7H22zm0-24l11-7h22l-11 7H22z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+              backgroundSize: "60px 52px",
+              transition: "background 0.3s ease",
+            }}
+          />
+
+          {/* Fade overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-gray-900/80 pointer-events-none" />
           <div className="container mx-auto px-6 text-center relative z-10">
             <motion.div
               initial={{ opacity: 0, y: 50 }}
@@ -225,7 +289,35 @@ const Index = () => {
         <FeaturesInfiniteScroll features={features} />
 
         {/* Services Section */}
-        <ServicesSection />
+        <section id="services" className="py-16 relative">
+          <div className="container mx-auto px-6">
+            {/* Services Heading */}
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              className="text-center mb-16"
+            >
+              <h2 className="text-5xl font-bold bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent mb-4">
+                Services
+              </h2>
+              <p className="text-gray-400 max-w-2xl mx-auto">
+                Discover our comprehensive platform designed for every member of
+                the campus community
+              </p>
+            </motion.div>
+
+            <ServicesSection
+              serviceFeatures={serviceFeatures}
+              hoveredCard={hoveredCard}
+              dialogPosition={dialogPosition}
+              onCardHover={handleCardHover}
+              onCardLeave={() => setHoveredCard(null)}
+            />
+          </div>
+        </section>
+
+        {/* About Section */}
+        <AboutSection />
 
         {/* Footer */}
         <FooterSection />
@@ -354,17 +446,31 @@ const FeatureCard = ({ feature }: { feature: any }) => {
 };
 
 // Services Section with Updated Cards
-const ServicesSection = () => {
+const ServicesSection = ({
+  serviceFeatures,
+  hoveredCard,
+  dialogPosition,
+  onCardHover,
+  onCardLeave,
+}: {
+  serviceFeatures: any;
+  hoveredCard: string | null;
+  dialogPosition: { x: number; y: number };
+  onCardHover: (cardType: string, event: React.MouseEvent) => void;
+  onCardLeave: () => void;
+}) => {
   return (
-    <section id="services" className="py-32">
+    <section id="services" className="py-8 relative">
       <div className="container mx-auto px-6">
         <div className="grid md:grid-cols-3 gap-8">
           {/* Student Portal */}
           <motion.div
             initial={{ opacity: 0, x: -100 }}
             whileInView={{ opacity: 1, x: 0 }}
-            whileHover={{ scale: 1.02 }}
-            className="bg-gradient-to-br from-blue-900/30 to-indigo-900/30 backdrop-blur-xl p-8 border border-blue-500/20"
+            whileHover={{ scale: 1.02, y: -5 }}
+            className="bg-gradient-to-br from-blue-900/30 to-indigo-900/30 backdrop-blur-xl p-8 border border-blue-500/20 rounded-xl cursor-pointer transition-all duration-300"
+            onMouseEnter={(e) => onCardHover("student", e)}
+            onMouseLeave={onCardLeave}
           >
             <div className="text-center">
               <GraduationCap className="w-16 h-16 text-blue-400 mx-auto mb-6" />
@@ -374,7 +480,7 @@ const ServicesSection = () => {
               <p className="text-gray-300 mb-6">
                 Access events, clubs, and campus resources
               </p>
-              <div className="bg-black/20 p-4 mb-6">
+              <div className="bg-black/20 p-4 mb-6 rounded-lg">
                 <Users className="w-8 h-8 text-blue-400 mx-auto mb-2" />
                 <p className="text-sm text-gray-400">
                   Connect • Explore • Engage
@@ -387,8 +493,10 @@ const ServicesSection = () => {
           <motion.div
             initial={{ opacity: 0, y: 100 }}
             whileInView={{ opacity: 1, y: 0 }}
-            whileHover={{ scale: 1.02 }}
-            className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-xl p-8 border border-purple-500/20"
+            whileHover={{ scale: 1.02, y: -5 }}
+            className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-xl p-8 border border-purple-500/20 rounded-xl cursor-pointer transition-all duration-300"
+            onMouseEnter={(e) => onCardHover("club", e)}
+            onMouseLeave={onCardLeave}
           >
             <div className="text-center">
               <UserCog className="w-16 h-16 text-purple-400 mx-auto mb-6" />
@@ -396,7 +504,7 @@ const ServicesSection = () => {
               <p className="text-gray-300 mb-6">
                 Manage your club events and members
               </p>
-              <div className="bg-black/20 p-4 mb-6">
+              <div className="bg-black/20 p-4 mb-6 rounded-lg">
                 <Calendar className="w-8 h-8 text-purple-400 mx-auto mb-2" />
                 <p className="text-sm text-gray-400">Create • Manage • Track</p>
               </div>
@@ -407,8 +515,10 @@ const ServicesSection = () => {
           <motion.div
             initial={{ opacity: 0, x: 100 }}
             whileInView={{ opacity: 1, x: 0 }}
-            whileHover={{ scale: 1.02 }}
-            className="bg-gradient-to-br from-emerald-900/30 to-green-900/30 backdrop-blur-xl p-8 border border-emerald-500/20"
+            whileHover={{ scale: 1.02, y: -5 }}
+            className="bg-gradient-to-br from-emerald-900/30 to-green-900/30 backdrop-blur-xl p-8 border border-emerald-500/20 rounded-xl cursor-pointer transition-all duration-300"
+            onMouseEnter={(e) => onCardHover("admin", e)}
+            onMouseLeave={onCardLeave}
           >
             <div className="text-center">
               <Settings className="w-16 h-16 text-emerald-400 mx-auto mb-6" />
@@ -418,7 +528,7 @@ const ServicesSection = () => {
               <p className="text-gray-300 mb-6">
                 Oversee campus activities and analytics
               </p>
-              <div className="bg-black/20 p-4 mb-6">
+              <div className="bg-black/20 p-4 mb-6 rounded-lg">
                 <Shield className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
                 <p className="text-sm text-gray-400">
                   Monitor • Control • Analyze
@@ -428,6 +538,82 @@ const ServicesSection = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* Custom Message Box Dialog */}
+      <MessageDialog
+        isVisible={!!hoveredCard}
+        position={dialogPosition}
+        features={hoveredCard ? serviceFeatures[hoveredCard] : []}
+      />
+    </section>
+  );
+};
+
+// About Section with Video
+const AboutSection = () => {
+  return (
+    <section
+      id="about"
+      className="py-16 bg-gradient-to-b from-transparent to-gray-900/50"
+    >
+      <div className="container mx-auto px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-4xl font-bold text-white mb-6">
+            About Campus SETU
+          </h2>
+          <p className="text-xl text-gray-400 max-w-3xl mx-auto mb-12">
+            Discover how we're revolutionizing campus life through innovative
+            technology and seamless connectivity. Join thousands of students
+            already transforming their university experience.
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          className="max-w-4xl mx-auto"
+        >
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-blue-900/20 to-purple-900/20 backdrop-blur-sm border border-white/10">
+            <div className="aspect-video relative group">
+              <iframe
+                className="w-full h-full"
+                src="https://www.youtube.com/embed/1PeyPCuwj2o?si=83P7WO6Rlr-dE4mf"
+                title="Campus SETU Demo"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+
+              {/* Play button overlay */}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center"
+                >
+                  <Play className="w-8 h-8 text-white ml-1" />
+                </motion.div>
+              </div>
+            </div>
+
+            {/* Video Info */}
+            <div className="p-6">
+              <h3 className="text-2xl font-bold text-white mb-2">
+                See Campus SETU in Action
+              </h3>
+              <p className="text-gray-400">
+                Watch how students, clubs, and administrators use our platform
+                to create meaningful connections and streamline campus
+                activities.
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      </div>
     </section>
   );
 };
@@ -435,7 +621,10 @@ const ServicesSection = () => {
 // Footer Section
 const FooterSection = () => {
   return (
-    <footer className="py-20 bg-gradient-to-t from-black to-gray-900">
+    <footer
+      id="contact"
+      className="py-20 bg-gradient-to-t from-black to-gray-900"
+    >
       <div className="container mx-auto px-6 text-center">
         <motion.div
           initial={{ opacity: 0, y: 50 }}

@@ -151,7 +151,6 @@ function App() {
   useEventRegistrationListener();
   useSignupListener();
   return (
-    
     <HomepageProvider>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
@@ -166,15 +165,21 @@ function App() {
                 }
               />
               <Route path="/signin" element={<SignIn />} />
+              <Route path="/login" element={<SignIn />} />
               <Route path="/signup" element={<SignUp />} />
-              <Route path="/homepage" element={
-                <ProtectedRoute>
-                  <Homepage />
-                  </ProtectedRoute>} />
+              <Route
+                path="/homepage"
+                element={
+                  <ProtectedRoute>
+                    <Homepage />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/event/:eventId" element={<EventDetailsPage />} />
-              <Route path="/profile/:username" element={
-                  <PublicProfilePage />
-              } />
+              <Route
+                path="/profile/:username"
+                element={<PublicProfilePage />}
+              />
               <Route
                 path="/people"
                 element={
@@ -199,18 +204,8 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/lost-and-found"
-                element={
-                  <LostAndFound />
-                }
-              />
-              <Route
-                path="/clubs"
-                element={
-                  <AllClubsPage />
-                }
-              />
+              <Route path="/lost-and-found" element={<LostAndFound />} />
+              <Route path="/clubs" element={<AllClubsPage />} />
               <Route
                 path="/club/create"
                 element={
@@ -251,89 +246,132 @@ function App() {
                   </ProtectedClubRoute>
                 }
               />
-              <Route path="/events-registered" element={
-                <ProtectedRoute>
-                  <EventsPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/collaborations" element={
-                <ProtectedRoute>
-                  <ProjectsPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/resources" element={
-                <ProtectedRoute>
-                  <ResourcesPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/create-temporary-opening" element={
-                <ProtectedRoute>
-                  <CreateTemporaryOpening />
-                </ProtectedRoute>
-              } />
-              <Route path="/club/event-attendees/:event_id" element={
-              <ProtectedClubRoute>
-                <EventAttendees />
-              </ProtectedClubRoute>
-                } />
-              <Route path="/openings" element={
-                <ProtectedRoute>
-                  <RecentOpeningsPage />
-                </ProtectedRoute>
-                } />
-                <Route path="/project/:opening_id" element={
+              <Route
+                path="/events-registered"
+                element={
+                  <ProtectedRoute>
+                    <EventsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/collaborations"
+                element={
+                  <ProtectedRoute>
+                    <ProjectsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/resources"
+                element={
+                  <ProtectedRoute>
+                    <ResourcesPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/create-temporary-opening"
+                element={
+                  <ProtectedRoute>
+                    <CreateTemporaryOpening />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/club/event-attendees/:event_id"
+                element={
+                  <ProtectedClubRoute>
+                    <EventAttendees />
+                  </ProtectedClubRoute>
+                }
+              />
+              <Route
+                path="/openings"
+                element={
+                  <ProtectedRoute>
+                    <RecentOpeningsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/project/:opening_id"
+                element={
                   <ProtectedRoute>
                     <Project />
-                  </ProtectedRoute>} />
-                <Route path="/dashboard" element={
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard"
+                element={
                   <ProtectedAdminRoute>
                     <DashboardLayout>
                       <Dashboard />
                     </DashboardLayout>
                   </ProtectedAdminRoute>
-                } />
-                <Route path="/dashboard/clubs" element={
+                }
+              />
+              <Route
+                path="/dashboard/clubs"
+                element={
                   <ProtectedAdminRoute>
                     <DashboardLayout>
                       <Clubs />
                     </DashboardLayout>
                   </ProtectedAdminRoute>
-                } />
-                  <Route path="/dashboard/events" element={
-                    <ProtectedAdminRoute>
-                      <DashboardLayout>
-                        <Events />
-                      </DashboardLayout>
-                    </ProtectedAdminRoute>
-                  } />
-                  <Route path="/dashboard/calendar" element={
-                    <ProtectedAdminRoute>
-                      <DashboardLayout>
-                        <CalendarPage />
-                      </DashboardLayout>
-                    </ProtectedAdminRoute>
-                  } />
-                  <Route path="/dashboard/newsletters" element={
-                    <ProtectedAdminRoute>
-                      <DashboardLayout>
-                        <Newsletters />
-                      </DashboardLayout>
-                    </ProtectedAdminRoute>
-                  } />
-                    <Route path="/dashboard/volunteering" element={
-                      <ProtectedAdminRoute>
-                        <DashboardLayout>
-                          <Volunteering />
-                        </DashboardLayout>
-                      </ProtectedAdminRoute>
-                    } />
-                    <Route path="/dashboard/users" element={
-                      <ProtectedAdminRoute>
-                        <DashboardLayout>
-                          <Users />
-                        </DashboardLayout>
-                      </ProtectedAdminRoute>
-                    } />
+                }
+              />
+              <Route
+                path="/dashboard/events"
+                element={
+                  <ProtectedAdminRoute>
+                    <DashboardLayout>
+                      <Events />
+                    </DashboardLayout>
+                  </ProtectedAdminRoute>
+                }
+              />
+              <Route
+                path="/dashboard/calendar"
+                element={
+                  <ProtectedAdminRoute>
+                    <DashboardLayout>
+                      <CalendarPage />
+                    </DashboardLayout>
+                  </ProtectedAdminRoute>
+                }
+              />
+              <Route
+                path="/dashboard/newsletters"
+                element={
+                  <ProtectedAdminRoute>
+                    <DashboardLayout>
+                      <Newsletters />
+                    </DashboardLayout>
+                  </ProtectedAdminRoute>
+                }
+              />
+              <Route
+                path="/dashboard/volunteering"
+                element={
+                  <ProtectedAdminRoute>
+                    <DashboardLayout>
+                      <Volunteering />
+                    </DashboardLayout>
+                  </ProtectedAdminRoute>
+                }
+              />
+              <Route
+                path="/dashboard/users"
+                element={
+                  <ProtectedAdminRoute>
+                    <DashboardLayout>
+                      <Users />
+                    </DashboardLayout>
+                  </ProtectedAdminRoute>
+                }
+              />
               <Route
                 path="/verify-attendees"
                 element={

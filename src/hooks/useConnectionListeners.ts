@@ -28,6 +28,7 @@ export function useConnectionListener() {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
+                  'x-api-key' :import.meta.env.VITE_EMAIL_SECRET,
                 },
                 body: JSON.stringify({
                   user2_id,
