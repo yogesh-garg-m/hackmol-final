@@ -21,7 +21,9 @@ export function useSignupListener() {
             // Get user details and email
             const [userDetails, emailResponse] = await Promise.all([
               fetchUserDetails(newRecord.id),
-              fetch(`http://localhost:3000/get-user-email/${newRecord.id}`),
+              fetch(
+                `https://email-server-cs.onrender.com/get-user-email/${newRecord.id}`
+              ),
             ]);
 
             const { email } = await emailResponse.json();
@@ -62,7 +64,7 @@ export function useSignupListener() {
               `;
 
             // Send email
-            await fetch("http://localhost:3000/send-direct", {
+            await fetch("https://email-server-cs.onrender.com/send-direct", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",

@@ -174,7 +174,7 @@ const Index = () => {
           <div
             className="absolute inset-0 honeycomb-bg opacity-30"
             style={{
-              background: `radial-gradient(circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(59, 130, 246, 0.3) 0%, transparent 300px), url("data:image/svg+xml,%3Csvg width='60' height='52' viewBox='0 0 60 52' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234F46E5' fill-opacity='0.1'%3E%3Cpath d='M22 38V14l11-7v24l-11 7zm0 0l11 7h22l-11-7H22zm0-24l11-7h22l-11 7H22z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+              background: `radial-gradient(circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(59, 130, 246, 0.4) 0%, transparent 300px), url("data:image/svg+xml,%3Csvg width='60' height='52' viewBox='0 0 60 52' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234F46E5' fill-opacity='0.1'%3E%3Cpath d='M22 38V14l11-7v24l-11 7zm0 0l11 7h22l-11-7H22zm0-24l11-7h22l-11 7H22z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
               backgroundSize: "60px 52px",
               transition: "background 0.3s ease",
             }}
@@ -589,15 +589,7 @@ const AboutSection = () => {
               />
 
               {/* Play button overlay */}
-              <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <motion.div
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center"
-                >
-                  <Play className="w-8 h-8 text-white ml-1" />
-                </motion.div>
-              </div>
+              
             </div>
 
             {/* Video Info */}

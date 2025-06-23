@@ -24,18 +24,21 @@ export function useConnectionListener() {
               const user2Details = await fetchUserDetails(user2_id);
 
               // Send data to backend
-              await fetch('http://localhost:3000/send-connection-email', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'x-api-key' :import.meta.env.VITE_EMAIL_SECRET,
-                },
-                body: JSON.stringify({
-                  user2_id,
-                  user2_full_name: user2Details.full_name,
-                  user1_id,
-                }),
-              });
+              await fetch(
+                "https://email-server-cs.onrender.com/send-connection-email",
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "x-api-key": import.meta.env.VITE_EMAIL_SECRET,
+                  },
+                  body: JSON.stringify({
+                    user2_id,
+                    user2_full_name: user2Details.full_name,
+                    user1_id,
+                  }),
+                }
+              );
 
               console.log('Connection email triggered for', user1_id);
             } catch (error) {

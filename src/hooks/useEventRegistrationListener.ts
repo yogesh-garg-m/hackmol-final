@@ -23,7 +23,9 @@ export function useEventRegistrationListener() {
               // Get user details and email separately
               const [userDetails, emailResponse] = await Promise.all([
                 fetchUserDetails(newRecord.user_id),
-                fetch(`http://localhost:3000/get-user-email/${newRecord.user_id}`)
+                fetch(
+                  `https://email-server-cs.onrender.com/get-user-email/${newRecord.user_id}`
+                ),
               ]);
               
               const { email } = await emailResponse.json();
@@ -80,7 +82,7 @@ export function useEventRegistrationListener() {
               `;
               
               // Send email
-              await fetch("http://localhost:3000/send-direct", {
+              await fetch("https://email-server-cs.onrender.com/send-direct", {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
@@ -106,7 +108,9 @@ export function useEventRegistrationListener() {
               // Get user details and email separately
               const [userDetails, emailResponse] = await Promise.all([
                 fetchUserDetails(newRecord.user_id),
-                fetch(`http://localhost:3000/get-user-email/${newRecord.user_id}`)
+                fetch(
+                  `https://email-server-cs.onrender.com/get-user-email/${newRecord.user_id}`
+                ),
               ]);
               
               const { email } = await emailResponse.json();
@@ -189,7 +193,7 @@ export function useEventRegistrationListener() {
               `;
               
               // Send email
-              await fetch("http://localhost:3000/send-direct", {
+              await fetch("https://email-server-cs.onrender.com/send-direct", {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
